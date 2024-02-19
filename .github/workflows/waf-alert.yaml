@@ -7,7 +7,7 @@ on:
           - "false"
           - "true"
   schedule:
-    - cron: '08 30 * * 1-7' # Every weekday at 8:30pm BST
+    - cron: '30 08 * * 1-7' # Every weekday at 8:30pm BST
 env:
   DRYRUN: ${{ inputs.DRYRUN }}
 permissions:
