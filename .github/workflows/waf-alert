@@ -1,0 +1,51 @@
+name: alert-waf-detection-mode
+on:
+  workflow_dispatch:
+    inputs:
+      DRYRUN:
+        options:
+          - "false"
+          - "true"
+  schedule:
+    - cron: '08 30 * * 1-7' # Every weekday at 8:30pm BST
+env:
+  DRYRUN: ${{ inputs.DRYRUN }}
+permissions:
+  id-token: write
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: 'Az CLI login'
+        uses: azure/login@v1
+        with:
+          client-id: 827d3a40-84ff-45b4-b95e-477db4a2b8f7
+          tenant-id: 531ff96d-0ae9-462a-8d2d-bec7c0b42082 # HMCTS.NET
+          allow-no-subscriptions: true
+      - name: Install Python
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Get slack webhook secret
+        id: slack-webhook
+        run: |
+          secrets_get=(waf-monitoring-slack-webhook)
+          for secret_get in ${secrets_get[@]}
+          do
+            value=$(az keyvault secret show --name $secret_get --vault-name cftptl-intsvc --query value --output tsv)
+            echo "::add-mask::$value"
+            echo "$secret_get=$value" >> $GITHUB_OUTPUT
+          done
+      - name: WAF mode analysis
+        run: ./scripts/waf-mode-analysis.py ${{ steps.slack-webhook.outputs.waf-monitoring-slack-webhook }}
+      - name: Commit to master
+        continue-on-error: true
+        if: env.JSON_FILE_EXISTS == 'true'
+        run: |
+          git config user.name hmcts-platform-operations
+          git config user.email github-platform-operations@hmcts.net
+          git add .
+          git commit -m "waf mode analysis"
+          git push
