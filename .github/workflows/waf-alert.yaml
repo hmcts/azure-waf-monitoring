@@ -32,7 +32,7 @@ jobs:
             echo "$secret_get=$value" >> $GITHUB_OUTPUT
           done
       - name: WAF mode analysis
-        run: ./scripts/waf-mode-analysis.py ${{ steps.slack-webhook.outputs.waf-monitoring-slack-webhook }}
+        run: python3 ./scripts/waf-mode-analysis.py ${{ steps.slack-webhook.outputs.waf-monitoring-slack-webhook }}
       - name: Commit to master
         continue-on-error: true
         if: env.JSON_FILE_EXISTS == 'true'
